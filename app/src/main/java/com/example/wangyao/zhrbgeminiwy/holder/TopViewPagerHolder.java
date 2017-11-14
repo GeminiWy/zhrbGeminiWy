@@ -15,6 +15,7 @@ public class TopViewPagerHolder extends RecyclerView.ViewHolder {
 
     public TopViewPagerHolder(View itemView) {
         super(itemView);
+        System.out.println("执行了");
         vp_Top = (ViewPager) itemView.findViewById(R.id.vp_topView);
     }
 }

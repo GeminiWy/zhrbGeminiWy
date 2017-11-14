@@ -3,6 +3,9 @@ package com.example.wangyao.zhrbgeminiwy.adapter;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Message;
+import android.support.v4.view.ViewPager;
 import android.support.v7.widget.RecyclerView;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -23,7 +26,12 @@ import com.example.wangyao.zhrbgeminiwy.listener.OnArticleItemClickListener;
 import com.example.wangyao.zhrbgeminiwy.listener.OnBottomListener;
 import com.example.wangyao.zhrbgeminiwy.listener.OnTopItemContentListener;
 
+
 import java.util.List;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
+
 
 /**
  * 主体列表adapter
@@ -49,7 +57,28 @@ public class ItemAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
     private OnBottomListener bottomListener;
 
     private List<ZhihuTop> zhihuTops;
+    private int currentItem ;
 
+    private ScheduledExecutorService scheduledExecutorService;
+    private Handler handler = new Handler(){//收到
+        @Override
+        public void handleMessage(Message msg) {
+            handler = new Handler(){
+                @Override
+                public void handleMessage(Message msg) {//当收到0的时候，页数加1
+                                Log.d("wykuailaikan", "currentItem2=" + currentItem);
+                                if (currentItem % imageViews.size() == 0) {//判断是不是第一张，第一张的时候不设置翻页动画
+                                    topViewPagerHolder.vp_Top.setCurrentItem(currentItem, false);//不设置翻页动画
+                                } else {
+                                    topViewPagerHolder.vp_Top.setCurrentItem(currentItem);
+                                }
+                }
+            };
+        }
+    };
+
+    private TopViewPagerHolder topViewPagerHolder;
+    private HeaderAdapter headerAdapter;
 
 
     public ItemAdapter(List<ZhihuStory> zhihuStories, Context mContext, List<ImageView> imageViews, OnBottomListener onBottomListener, List<ZhihuTop> zhihuTops){
@@ -59,8 +88,10 @@ public class ItemAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         this.bottomListener = onBottomListener;
         this.zhihuTops = zhihuTops;
         inflater = LayoutInflater.from(mContext);
-
+        this.currentItem = ((Short.MAX_VALUE / 2)/imageViews.size())*imageViews.size();
     }
+
+
 
     @Override
     public int getItemViewType(int position) {
@@ -75,8 +106,24 @@ public class ItemAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
 
     @Override
     public RecyclerView.ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
-       View view;
-        if (viewType == TYPE_ARTICLE) {
+       View view = null;
+        RecyclerView.ViewHolder viewHolder = null;
+        switch (viewType){
+            case TYPE_ARTICLE:
+                view = LayoutInflater.from(mContext).inflate(R.layout.news_item,parent,false);
+                viewHolder = new ArticleListHolder(view);
+                break;
+            case TYPE_FOOTER:
+                view = LayoutInflater.from(mContext).inflate(R.layout.footer_layout,parent,false);
+                viewHolder = new ArticleListFooterHolder(view);
+                break;
+            case TYPE_TOP:
+                view = LayoutInflater.from(mContext).inflate(R.layout.top_vp_layout,parent,false);
+                viewHolder = new TopViewPagerHolder(view);
+                break;
+        }
+        return viewHolder;
+        /*if (viewType == TYPE_ARTICLE) {
         view = inflater.inflate(R.layout.news_item,parent,false);
             return new ArticleListHolder(view);
         }else if (viewType == TYPE_FOOTER) {
@@ -84,7 +131,8 @@ public class ItemAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
             return new ArticleListFooterHolder(view);
         }
         view = inflater.inflate(R.layout.top_vp_layout,parent,false);
-        return new TopViewPagerHolder(view);
+
+        return new TopViewPagerHolder(view);*/
     }
 
     @Override
@@ -121,12 +169,43 @@ public class ItemAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
 
 
             case TYPE_TOP:
-                final TopViewPagerHolder topViewPagerHolder = (TopViewPagerHolder) holder;
-                topViewPagerHolder.vp_Top.setCurrentItem(((Short.MAX_VALUE / 2)/imageViews.size())*imageViews.size(), false);
+                topViewPagerHolder = (TopViewPagerHolder) holder;
+                topViewPagerHolder.vp_Top.setCurrentItem(currentItem, false);
                                                                              //除以imageviews.size再乘，将余数去除，保证是在中间的第一张。
 
-                HeaderAdapter headerAdapter = new HeaderAdapter(imageViews,topViewPagerHolder);
+                headerAdapter = new HeaderAdapter(imageViews);
                 topViewPagerHolder.vp_Top.setAdapter(headerAdapter);
+
+                topViewPagerHolder.vp_Top.addOnPageChangeListener(new ViewPager.OnPageChangeListener() {
+                    @Override
+                    public void onPageScrolled(int position, float positionOffset, int positionOffsetPixels) {
+
+                    }
+
+                    @Override
+                    public void onPageSelected(int position) {
+                        currentItem = position;
+                    }
+
+                    @Override
+                    public void onPageScrollStateChanged(int state) {
+
+
+                    }
+                });
+                scheduledExecutorService = Executors.newScheduledThreadPool(1);
+                Runnable runnable = new Runnable() {
+                    @Override
+                    public void run() {
+                        synchronized (topViewPagerHolder.vp_Top) {
+                            Log.d("wykuailaikan", "执行了两次");
+                            currentItem = currentItem+1;
+                            handler.obtainMessage().sendToTarget();
+                            Log.d("wykuailaikan", "topViewPagerHolder.vp_Top.getCurrentItem()=" + topViewPagerHolder.vp_Top.getCurrentItem());
+                        }
+                    }
+                };
+                scheduledExecutorService.scheduleAtFixedRate(runnable, 1000, 3000, TimeUnit.MILLISECONDS);
 
                 headerAdapter.setOnTopItemContentListener(new OnTopItemContentListener() {
                     @Override
@@ -144,6 +223,8 @@ public class ItemAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         }
 
     }
+
+
 
     @Override
     public int getItemCount() {

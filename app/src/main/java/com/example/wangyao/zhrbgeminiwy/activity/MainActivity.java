@@ -3,6 +3,8 @@ package com.example.wangyao.zhrbgeminiwy.activity;
 import android.content.Context;
 
 import android.content.IntentFilter;
+import android.os.Handler;
+import android.os.Message;
 import android.support.v4.view.GravityCompat;
 import android.support.v4.view.ViewPager;
 import android.support.v4.widget.DrawerLayout;
@@ -29,6 +31,7 @@ import com.example.wangyao.zhrbgeminiwy.gson.BeforeNewsBean;
 import com.example.wangyao.zhrbgeminiwy.gson.NewsBean;
 import com.example.wangyao.zhrbgeminiwy.gson.ZhihuStory;
 import com.example.wangyao.zhrbgeminiwy.gson.ZhihuTop;
+import com.example.wangyao.zhrbgeminiwy.holder.TopViewPagerHolder;
 import com.example.wangyao.zhrbgeminiwy.listener.OnBeforeNewsBeanListener;
 import com.example.wangyao.zhrbgeminiwy.listener.OnBottomListener;
 import com.example.wangyao.zhrbgeminiwy.listener.OnNewsBeanListener;
@@ -62,15 +65,14 @@ public class MainActivity extends AppCompatActivity {
         mainActivity = this;
         initUI();
         initListView();
-
-
     }
+
 
     private void initBroadcastReceiver() {
         networkChangeReceiver = new NetworkChangeReceiver();
         IntentFilter intenFilter = new IntentFilter();
         intenFilter.addAction("android.net.conn.CONNECTIVITY_CHANGE");
-        registerReceiver(networkChangeReceiver,intenFilter);
+        registerReceiver(networkChangeReceiver, intenFilter);
     }
 
 
@@ -89,7 +91,7 @@ public class MainActivity extends AppCompatActivity {
                 @Override
                 public void onRefresh() {
                     initListView();
-                    Toast.makeText(mContext,"最新文章",Toast.LENGTH_SHORT).show();
+                    Toast.makeText(mContext, "最新文章", Toast.LENGTH_SHORT).show();
                 }
             });
 
@@ -109,8 +111,6 @@ public class MainActivity extends AppCompatActivity {
                 date = newsBean.getDate();
                 list = newsBean.getStories();
                 topstories = newsBean.getTop_stories();
-                Log.d("WykuailaiLook","List<topstories>:=="+ topstories);
-                Log.d("WykuailaiLook", "List<ZhihuStory>:== " + list);
                 OnBottomListener bottomListener = new OnBottomListener() {
                     @Override
                     public void onInitBottom() {
@@ -120,8 +120,8 @@ public class MainActivity extends AppCompatActivity {
                 /**
                  * 加载顶部Viewpager
                  */
-                for (int i = 0;i < topstories.size();i ++ ){
-                    if (i > 4){
+                for (int i = 0; i < topstories.size(); i++) {
+                    if (i > 4) {
                         break;
                     }
 
@@ -131,13 +131,11 @@ public class MainActivity extends AppCompatActivity {
                     imageView.setScaleType(ImageView.ScaleType.CENTER_CROP);
                     Glide.with(mContext).load(topstories.get(i).getImage()).into(imageView);
                     imageViews.add(imageView);
-                    Log.d("WykuailaiLook", "topImage==> " + topstories.get(i).getImage());
                 }
-                Log.d("WykuailaiLook","listimageViews"+imageViews);
 
 //                newsAdapter.loadTopArticleListener.onSuccess(topstories);//将topstories数据传入接口
                 LinearLayoutManager layoutManager = new LinearLayoutManager(mContext);
-                itemAdapter = new ItemAdapter(list,mContext,imageViews,bottomListener,topstories);
+                itemAdapter = new ItemAdapter(list, mContext, imageViews, bottomListener, topstories);
                 rcy_View.setLayoutManager(layoutManager);
                 rcy_View.setAdapter(itemAdapter);
                 swipeRefreshLayout.setRefreshing(false);
@@ -150,10 +148,6 @@ public class MainActivity extends AppCompatActivity {
 
             }
         });
-
-
-
-
 
 
     }
@@ -205,6 +199,7 @@ public class MainActivity extends AppCompatActivity {
         unregisterReceiver(networkChangeReceiver);
     }
 }
+
 
 
 
